@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="包材計算"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#2d6a4f"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<link rel="icon" type="image/png" href="icon-192.png"/>
+<title>包材規格計算機</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f5f4f0;--card:#fff;--border:#e2dfd8;
+  --accent:#2d6a4f;--accent-light:#e8f5ee;--accent-text:#1a4a33;
+  --text:#1a1a1a;--sub:#6b6b6b;--muted:#b0b0b0;
+  --danger:#c0392b;--danger-light:#fdf0ee;
+  --tag:#f0ede8;--tag-text:#555;
+  --shadow:0 2px 12px rgba(0,0,0,0.07);
+  --radius:14px;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Noto Sans TC',sans-serif;
+  background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;
+}
+
+/* ── Header ── */
+#header{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  padding: calc(var(--safe-top) + 10px) 16px 10px;
+  flex-shrink:0;
+  box-shadow:0 1px 8px rgba(0,0,0,0.07);
+  z-index:200;
+}
+.header-inner{
+  max-width:680px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.app-title-sub{font-size:10px;color:var(--accent);font-weight:800;letter-spacing:3px}
+.app-title{font-size:20px;font-weight:900;line-height:1.15}
+.tab-bar{display:flex;background:var(--bg);border-radius:10px;padding:4px;border:1px solid var(--border);gap:2px}
+.tab-btn{background:transparent;color:var(--sub);font-size:13px;padding:8px 14px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;font-weight:700;transition:all .15s}
+.tab-btn.active{background:var(--accent);color:#fff}
+
+/* ── Scroll area ── */
+#main{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom: calc(var(--safe-bottom) + 20px);
+}
+#main-inner{max-width:680px;margin:0 auto;padding:18px 14px 40px}
+
+/* ── Bag selector ── */
+.section-label{font-size:12px;color:var(--sub);font-weight:700;margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase}
+.bag-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.bag-chip{background:var(--card);color:var(--text);border:1.5px solid var(--border);font-size:14px;padding:9px 16px;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s}
+.bag-chip:active{transform:scale(.96)}
+.bag-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 2px 10px rgba(45,106,79,.35)}
+
+/* ── Input card ── */
+.input-card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.meta-tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.meta-tag{font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px}
+.meta-tag.green{background:var(--accent-light);color:var(--accent-text)}
+.meta-tag.gray{background:var(--tag);color:var(--tag-text)}
+.fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;margin-bottom:16px}
+.field-wrap label{color:var(--sub);font-size:13px;font-weight:600;display:block;margin-bottom:5px}
+.field-wrap input{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);padding:10px 12px;border-radius:10px;
+  font-size:26px;font-weight:800;font-family:inherit;
+  font-variant-numeric:tabular-nums;transition:border-color .15s;
+}
+.field-wrap input:focus{border-color:var(--accent);outline:none}
+.error-msg{color:var(--danger);font-size:14px;font-weight:600;margin-bottom:12px;padding:10px 14px;background:var(--danger-light);border-radius:8px}
+.calc-btn{
+  width:100%;background:var(--accent);color:#fff;
+  font-size:18px;padding:16px;border-radius:12px;
+  box-shadow:0 4px 14px rgba(45,106,79,.4);
+  border:none;cursor:pointer;font-family:inherit;font-weight:900;
+  letter-spacing:2px;transition:all .15s;
+}
+.calc-btn:active{transform:scale(.98);opacity:.9}
+
+/* ── Results ── */
+.results-header{font-size:13px;color:var(--sub);margin-bottom:14px;font-weight:600}
+.results-header span{color:var(--accent);font-weight:800}
+.result-card{
+  border-radius:var(--radius);padding:20px;margin-bottom:14px;
+  box-shadow:var(--shadow);position:relative;
+  border:2px solid var(--border);background:var(--card);
+}
+.result-card.recommended{background:var(--accent-light);border-color:var(--accent)}
+.rec-badge{
+  position:absolute;top:-12px;left:18px;
+  background:var(--accent);color:#fff;
+  font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;
+}
+.n-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.n-label{color:var(--sub);font-size:14px}
+.n-badge{background:var(--tag);color:var(--accent-text);font-size:18px;font-weight:900;padding:4px 18px;border-radius:8px}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.metric{border:1px solid var(--border);border-radius:12px;padding:12px 4px;text-align:center}
+.result-card.recommended .metric{background:#fff}
+.result-card:not(.recommended) .metric{background:var(--bg)}
+.metric-label{color:var(--muted);font-size:10px;font-weight:700;margin-bottom:5px;letter-spacing:.3px}
+.metric-val{font-size:22px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.result-card.recommended .metric-val{color:var(--accent-text)}
+.metric-unit{color:var(--muted);font-size:10px;margin-top:2px}
+.toggle-btn{
+  background:transparent;border:1px solid var(--border);color:var(--sub);
+  font-size:13px;padding:7px 14px;border-radius:8px;
+  cursor:pointer;font-family:inherit;font-weight:600;
+  display:flex;align-items:center;gap:5px;
+}
+.detail-box{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid var(--border)}
+.detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);gap:10px}
+.detail-row:last-child{border-bottom:none}
+.detail-key{color:var(--sub);font-size:12px;white-space:nowrap}
+.detail-val{color:var(--text);font-size:13px;font-weight:600;text-align:right;font-family:monospace;word-break:break-all}
+
+/* ── Manage ── */
+.manage-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.manage-title{font-size:17px;font-weight:900}
+.manage-title span{color:var(--muted);font-size:13px;font-weight:400;margin-left:4px}
+.add-btn{background:var(--accent);color:#fff;font-size:15px;padding:10px 20px;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-weight:800}
+.bag-item{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.bag-item-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.bag-item-name{font-size:16px;font-weight:800;margin-bottom:7px}
+.bag-item-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:7px}
+.bag-item-formula{font-size:11px;color:var(--sub);font-family:monospace;word-break:break-all}
+.item-actions{display:flex;gap:6px;flex-shrink:0;margin-top:2px}
+.edit-btn,.del-btn{font-size:13px;padding:7px 13px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700}
+.edit-btn{background:var(--tag);color:var(--text)}
+.del-btn{background:var(--danger-light);color:var(--danger)}
+.del-confirm{margin-top:12px;padding:13px;background:var(--danger-light);border-radius:10px}
+.del-confirm-text{font-size:13px;font-weight:700;color:var(--danger);margin-bottom:9px}
+.del-confirm-btns{display:flex;gap:8px}
+.del-yes,.del-no{font-size:13px;padding:8px 18px;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700}
+.del-yes{background:var(--danger);color:#fff}
+.del-no{background:var(--tag);color:var(--text)}
+
+/* ── Editor ── */
+.editor-card{background:var(--card);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:var(--shadow);border:2px solid var(--accent)}
+.editor-title{font-size:16px;font-weight:900;color:var(--accent-text);margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.form-group{margin-bottom:14px}
+.form-label{color:var(--sub);font-size:12px;font-weight:700;display:block;margin-bottom:6px;letter-spacing:.3px}
+.form-input,.form-select{
+  width:100%;background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);padding:11px 12px;border-radius:10px;font-size:15px;
+  font-family:inherit;outline:none;transition:border-color .15s;
+}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+
+/* formula builder */
+.formula-builder{background:#f9f8f5;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:4px}
+.formula-preview{
+  font-size:12px;color:var(--accent);font-weight:700;
+  padding:9px 12px;background:var(--accent-light);border-radius:8px;
+  font-family:monospace;margin-bottom:12px;word-break:break-all;line-height:1.5;
+}
+.formula-item{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.formula-item-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.coeff-input{
+  width:56px;background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);padding:7px 8px;border-radius:8px;
+  font-size:18px;font-weight:800;text-align:center;font-family:inherit;outline:none;
+}
+.parts-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.small-select,.var-select{
+  background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);padding:6px 8px;border-radius:8px;
+  font-size:13px;font-family:inherit;outline:none;
+}
+.var-select{color:var(--accent-text);font-weight:800;font-size:14px}
+.small-num{
+  width:60px;background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);padding:6px 8px;border-radius:8px;
+  font-size:15px;font-weight:700;text-align:center;font-family:inherit;outline:none;
+}
+.rm-part-btn{background:var(--danger-light);color:var(--danger);font-size:11px;padding:5px 8px;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:700}
+.add-part-btn{background:var(--tag);color:var(--sub);font-size:12px;padding:6px 12px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;font-weight:600}
+.rm-item-btn{background:var(--danger-light);color:var(--danger);font-size:12px;padding:6px 11px;border:none;border-radius:7px;cursor:pointer;font-family:inherit;font-weight:700}
+.add-item-btn{
+  width:100%;background:var(--accent-light);color:var(--accent-text);
+  font-size:13px;padding:9px;border:none;border-radius:8px;
+  cursor:pointer;font-family:inherit;font-weight:700;margin-bottom:12px;
+}
+.outer-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.outer-row span{color:var(--sub);font-size:13px;white-space:nowrap}
+.outer-num{
+  width:90px;background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);padding:8px 10px;border-radius:8px;
+  font-size:15px;font-family:inherit;outline:none;text-align:center;
+}
+
+.settings-section{background:#f9f8f5;border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:14px}
+.settings-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.settings-preview{font-size:12px;color:var(--accent);font-family:monospace;margin-top:8px;font-weight:700}
+
+.auto-fields{background:var(--accent-light);border:1px solid rgba(45,106,79,.2);border-radius:10px;padding:12px;margin-bottom:18px}
+.auto-fields-title{font-size:12px;color:var(--accent-text);font-weight:700;margin-bottom:8px}
+.auto-fields-chips{display:flex;flex-wrap:wrap;gap:6px}
+.auto-chip{background:var(--accent);color:#fff;font-size:13px;font-weight:700;padding:4px 13px;border-radius:20px}
+
+.editor-actions{display:flex;gap:10px}
+.save-btn{
+  background:var(--accent);color:#fff;font-size:16px;
+  padding:14px;flex:1;border:none;border-radius:12px;
+  cursor:pointer;font-family:inherit;font-weight:900;
+}
+.save-btn.disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.cancel-btn{
+  background:var(--tag);color:var(--text);font-size:16px;
+  padding:14px 18px;border:none;border-radius:12px;
+  cursor:pointer;font-family:inherit;font-weight:700;
+}
+
+/* ── Empty ── */
+.empty-state{text-align:center;padding:70px 20px;color:var(--muted)}
+.empty-icon{font-size:52px;margin-bottom:14px}
+.empty-text{font-size:16px;font-weight:600}
+
+/* active press */
+button:active{opacity:.75;transform:scale(.97)}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="header-inner">
+    <div>
+      <div class="app-title-sub">PACKAGING</div>
+      <div class="app-title">包材規格計算機</div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-calc-btn" onclick="switchTab('calc')">📦 計算</button>
+      <button class="tab-btn" id="tab-manage-btn" onclick="switchTab('manage')">⚙️ 管理</button>
+    </div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="main-inner">
+    <div id="tab-calc"></div>
+    <div id="tab-manage" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  VARIABLES & DEFAULTS
+// ══════════════════════════════════════════════
+const ALL_VARS = ["W1","W2","H1","H2","S1","S2","S3","D1","D2"];
+
+const DEFAULT_BAGS = [
+  {id:1,name:"三面封",direction:"直式",
+   formulaDisplay:"[2×(W1)] × n + 10",
+   formulaFn:"({W1,n})=>2*W1*n+10",
+   pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1"]},
+  {id:2,name:"橫式三面封",direction:"橫式",
+   formulaDisplay:"[2×(H1)] × n + 10",
+   formulaFn:"({H1,n})=>2*H1*n+10",
+   pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","W1"]},
+  {id:3,name:"合掌封",direction:"直式",
+   formulaDisplay:"[2×(W1 + S1)] × n",
+   formulaFn:"({W1,S1,n})=>2*(W1+S1)*n",
+   pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1","S1"]},
+  {id:4,name:"夾邊合掌封（正背寬度相同）",direction:"直式",
+   formulaDisplay:"[2×(W1 + D1 + S1)] × n",
+   formulaFn:"({W1,D1,S1,n})=>2*(W1+D1+S1)*n",
+   pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1","D1","S1"]},
+  {id:5,name:"夾邊合掌封（正背寬度不相同）",direction:"直式",
+   formulaDisplay:"[1×(W1 + W2) + 2×(D1 + S1)] × n",
+   formulaFn:"({W1,W2,D1,S1,n})=>(W1+W2+2*(D1+S1))*n",
+   pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","W2","H1","D1","S1"]},
+  {id:6,name:"造型直式三面封",direction:"直式",
+   formulaDisplay:"[2×(W1 + 5)] × n + 10",
+   formulaFn:"({W1,n})=>2*(W1+5)*n+10",
+   pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1"]},
+  {id:7,name:"造型橫式圓底立式袋",direction:"橫式",
+   formulaDisplay:"[2×(H1 + 5) + 2×(H2)] × n + 30",
+   formulaFn:"({H1,H2,n})=>(2*(H1+5)+2*H2)*n+30",
+   pitchFn:"({W1})=>W1+5",pitchLabel:"W1+5",widthBase:"H1+5",fields:["H1","H2","W1"]},
+  {id:8,name:"造型橫式圓底由任立式袋",direction:"橫式",
+   formulaDisplay:"[2×(H1 + 5) + 2×(H2)] × n + 30",
+   formulaFn:"({H1,H2,n})=>(2*(H1+5)+2*H2)*n+30",
+   pitchFn:"({W1})=>W1+5",pitchLabel:"W1+5",widthBase:"H1+5",fields:["H1","H2","W1"]},
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let bags=[], currentTab='calc', selectedBagId=null;
+let calcInputs={}, calcResults=null, calcError='';
+let editingBag=null, deleteConfirmId=null;
+let fbItems=[], fbOuterConst='';
+let fbPitchVar='H1', fbPitchConst='';
+let fbWidthVar='W1', fbWidthConst='';
+
+function loadData(){
+  try{
+    const s=localStorage.getItem('packagingBags_v4');
+    bags=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_BAGS));
+  }catch{bags=JSON.parse(JSON.stringify(DEFAULT_BAGS));}
+  if(!selectedBagId&&bags.length) selectedBagId=bags[0].id;
+}
+function saveData(){ try{localStorage.setItem('packagingBags_v4',JSON.stringify(bags));}catch{} }
+
+// ══════════════════════════════════════════════
+//  COMPUTE ENGINE
+// ══════════════════════════════════════════════
+function evalFn(fn,args){try{return new Function('a',`return (${fn})(a);`)(args);}catch{return null;}}
+
+function getPitchModulus(pitch){
+  for(let m=1;m<=200;m++){
+    const v=pitch*m;
+    if(v%10===0&&v>=430) return {m,versWeek:v};
+  }
+  return null;
+}
+function getVersionLength(rw){
+  const raw=rw+100;
+  if(raw<840) return 840;
+  if(raw<1100) return 1100;
+  return null;
+}
+function computeAll(bag,inputs){
+  const results=[];
+  for(let n=1;n<=10;n++){
+    const rw=evalFn(bag.formulaFn,{...inputs,n});
+    if(rw===null||rw>=1000) break;
+    const vl=getVersionLength(rw);
+    if(!vl) continue;
+    const pitch=evalFn(bag.pitchFn,inputs);
+    if(!pitch) continue;
+    const pm=getPitchModulus(pitch);
+    if(!pm) continue;
+    let mw;
+    const wb=bag.widthBase;
+    if(wb.includes('+')){const[v,c]=wb.split('+');mw=(inputs[v]||0)+parseFloat(c);}
+    else mw=inputs[wb]||0;
+    results.push({n,realWidth:rw,modWidth:mw,pitch,pitchModulus:pm.m,versWeek:pm.versWeek,plateModulus:n*pm.m,versionLength:vl});
+  }
+  return results;
+}
+function getRecommended(res){
+  const v840=res.filter(r=>r.versionLength===840);
+  return v840.length?v840[v840.length-1].n:res[res.length-1].n;
+}
+
+// ══════════════════════════════════════════════
+//  FORMULA BUILDER HELPERS
+// ══════════════════════════════════════════════
+function fbNew(){return{id:Date.now()+Math.random(),coeff:'2',parts:[{type:'var',val:'W1'}],addConst:''};}
+
+function fbDisplay(){
+  if(!fbItems.length) return '—';
+  const strs=fbItems.map(item=>{
+    const inner=[
+      ...item.parts.map(p=>p.type==='var'?p.val:String(p.val)),
+      ...(item.addConst&&parseFloat(item.addConst)!==0?[String(item.addConst)]:[])
+    ].join(' + ');
+    const c=parseFloat(item.coeff)||1;
+    return c===1?(inner.includes('+')?`(${inner})`:inner):`${c}×(${inner})`;
+  });
+  let s=`[${strs.join(' + ')}] × n`;
+  if(fbOuterConst&&parseFloat(fbOuterConst)!==0) s+=` + ${fbOuterConst}`;
+  return s;
+}
+function fbFn(){
+  const used=new Set(['n']);
+  fbItems.forEach(item=>item.parts.forEach(p=>{if(p.type==='var')used.add(p.val);}));
+  const params=`{${[...used].join(',')}}`;
+  const exprs=fbItems.map(item=>{
+    const parts=item.parts.map(p=>p.type==='var'?p.val:String(p.val));
+    const ac=parseFloat(item.addConst)||0;
+    if(ac!==0) parts.push(String(ac));
+    const c=parseFloat(item.coeff)||1;
+    return `${c}*(${parts.join('+')})`;
+  });
+  const sum=exprs.length>1?`(${exprs.join('+')})`:(exprs[0]||'0');
+  const oc=parseFloat(fbOuterConst)||0;
+  return `(${params})=>${oc!==0?`${sum}*n+${oc}`:`${sum}*n`}`;
+}
+function fbPitchFn(){
+  const c=parseFloat(fbPitchConst)||0;
+  return c!==0?`({${fbPitchVar}})=>${fbPitchVar}+${c}`:`({${fbPitchVar}})=>${fbPitchVar}`;
+}
+function fbPitchLabel(){
+  const c=parseFloat(fbPitchConst)||0;
+  return c!==0?`${fbPitchVar}+${c}`:fbPitchVar;
+}
+function fbWidthBase(){
+  const c=parseFloat(fbWidthConst)||0;
+  return c!==0?`${fbWidthVar}+${c}`:fbWidthVar;
+}
+function fbFields(){
+  const s=new Set();
+  fbItems.forEach(item=>item.parts.forEach(p=>{if(p.type==='var')s.add(p.val);}));
+  s.add(fbPitchVar);
+  return[...s];
+}
+
+// ══════════════════════════════════════════════
+//  RENDER — SWITCH TAB
+// ══════════════════════════════════════════════
+function switchTab(t){
+  currentTab=t;
+  document.getElementById('tab-calc').style.display=t==='calc'?'':'none';
+  document.getElementById('tab-manage').style.display=t==='manage'?'':'none';
+  document.getElementById('tab-calc-btn').classList.toggle('active',t==='calc');
+  document.getElementById('tab-manage-btn').classList.toggle('active',t==='manage');
+  t==='calc'?renderCalc():renderManage();
+}
+
+// ══════════════════════════════════════════════
+//  RENDER — CALC TAB
+// ══════════════════════════════════════════════
+function renderCalc(){
+  const el=document.getElementById('tab-calc');
+  const bag=bags.find(b=>b.id===selectedBagId);
+
+  const chips=bags.map(b=>`
+    <button class="bag-chip${b.id===selectedBagId?' active':''}" onclick="selectBag(${b.id})">${b.name}</button>
+  `).join('');
+
+  let fieldsHtml='';
+  if(bag){
+    fieldsHtml=bag.fields.map(f=>`
+      <div class="field-wrap">
+        <label>${f} <span style="color:var(--muted);font-weight:400">(mm)</span></label>
+        <input type="number" inputmode="decimal" value="${calcInputs[f]??''}" placeholder="0"
+          oninput="setInput('${f}',this.value)"/>
+      </div>
+    `).join('');
+  }
+
+  let resultsHtml='';
+  if(calcResults&&calcResults.length){
+    const rec=getRecommended(calcResults);
+    resultsHtml=`<div class="results-header">找到 <span>${calcResults.length}</span> 組合法組合</div>`;
+    resultsHtml+=calcResults.map(r=>renderResultCard(r,bag,r.n===rec)).join('');
+  }
+
+  el.innerHTML=`
+    <div class="section-label">選擇袋型</div>
+    <div class="bag-chips">${chips}</div>
+    ${bag?`
+      <div class="input-card">
+        <div class="meta-tags">
+          <span class="meta-tag green">${bag.direction}製作</span>
+          <span class="meta-tag gray">模寬：${bag.widthBase}</span>
+          <span class="meta-tag gray">節距：${bag.pitchLabel}</span>
+        </div>
+        <div class="fields-grid">${fieldsHtml}</div>
+        ${calcError?`<div class="error-msg">⚠ ${calcError}</div>`:''}
+        <button class="calc-btn" onclick="doCalc()">計　　算</button>
+      </div>
+      ${resultsHtml}
+    `:`<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">請先選擇袋型</div></div>`}
+  `;
+}
+
+function renderResultCard(r,bag,isRec){
+  const did=`d${r.n}`;
+  return`
+    <div class="result-card${isRec?' recommended':''}">
+      ${isRec?'<div class="rec-badge">✦ 建議選用</div>':''}
+      <div class="n-row">
+        <span class="n-label">寬向模數</span>
+        <span class="n-badge">× ${r.n}</span>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric"><div class="metric-label">實寬</div><div class="metric-val">${r.realWidth}</div><div class="metric-unit">mm</div></div>
+        <div class="metric"><div class="metric-label">版週</div><div class="metric-val">${r.versWeek}</div><div class="metric-unit">mm</div></div>
+        <div class="metric"><div class="metric-label">軋版模數</div><div class="metric-val">${r.plateModulus}</div></div>
+        <div class="metric"><div class="metric-label">版長</div><div class="metric-val">${r.versionLength}</div><div class="metric-unit">mm</div></div>
+      </div>
+      <button class="toggle-btn" onclick="toggleDetail('${did}',this)"><span>▼</span> 查看計算式</button>
+      <div id="${did}" class="detail-box" style="display:none">
+        <div class="detail-row"><span class="detail-key">實寬公式</span><span class="detail-val">${bag.formulaDisplay}</span></div>
+        <div class="detail-row"><span class="detail-key">模寬</span><span class="detail-val">${r.modWidth} mm</span></div>
+        <div class="detail-row"><span class="detail-key">節距</span><span class="detail-val">${r.pitch} mm（${bag.pitchLabel}）</span></div>
+        <div class="detail-row"><span class="detail-key">節距向模數</span><span class="detail-val">${r.pitchModulus}</span></div>
+        <div class="detail-row"><span class="detail-key">版週計算式</span><span class="detail-val">${r.pitch} × ${r.pitchModulus} = ${r.versWeek}</span></div>
+        <div class="detail-row"><span class="detail-key">軋版模數計算式</span><span class="detail-val">${r.n} × ${r.pitchModulus} = ${r.plateModulus}</span></div>
+        <div class="detail-row"><span class="detail-key">版長判斷</span><span class="detail-val">${r.realWidth}+100=${r.realWidth+100} → 取 ${r.versionLength}</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleDetail(id,btn){
+  const el=document.getElementById(id);
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'';
+  btn.innerHTML=open?'<span>▼</span> 查看計算式':'<span>▲</span> 收合計算式';
+}
+
+function selectBag(id){selectedBagId=id;calcInputs={};calcResults=null;calcError='';renderCalc();}
+function setInput(f,v){calcInputs[f]=v;calcResults=null;calcError='';}
+function doCalc(){
+  calcError='';
+  const bag=bags.find(b=>b.id===selectedBagId);
+  if(!bag) return;
+  for(const f of bag.fields){
+    if(!calcInputs[f]&&calcInputs[f]!==0){calcError=`請輸入 ${f}`;renderCalc();return;}
+  }
+  const parsed={};
+  for(const f of bag.fields) parsed[f]=parseFloat(calcInputs[f]);
+  const res=computeAll(bag,parsed);
+  if(!res.length){calcError='無合法組合，請確認尺寸';calcResults=null;renderCalc();return;}
+  calcResults=res;
+  renderCalc();
+}
+
+// ══════════════════════════════════════════════
+//  RENDER — MANAGE TAB
+// ══════════════════════════════════════════════
+function renderManage(){
+  const el=document.getElementById('tab-manage');
+  const editorHtml=editingBag!==null?renderEditor():'';
+  const listHtml=bags.map(b=>`
+    <div class="bag-item">
+      <div class="bag-item-header">
+        <div style="flex:1;min-width:0">
+          <div class="bag-item-name">${b.name}</div>
+          <div class="bag-item-tags">
+            <span class="meta-tag green" style="font-size:11px">${b.direction}</span>
+            ${b.fields.map(f=>`<span class="meta-tag gray" style="font-size:11px">${f}</span>`).join('')}
+          </div>
+          <div class="bag-item-formula">實寬：${b.formulaDisplay}</div>
+        </div>
+        <div class="item-actions">
+          <button class="edit-btn" onclick="startEdit(${b.id})">編輯</button>
+          <button class="del-btn" onclick="confirmDel(${b.id})">刪除</button>
+        </div>
+      </div>
+      ${deleteConfirmId===b.id?`
+        <div class="del-confirm">
+          <div class="del-confirm-text">確定刪除「${b.name}」？此動作無法復原。</div>
+          <div class="del-confirm-btns">
+            <button class="del-yes" onclick="doDelete(${b.id})">確定刪除</button>
+            <button class="del-no" onclick="cancelDel()">取消</button>
+          </div>
+        </div>
+      `:''}
+    </div>
+  `).join('');
+
+  el.innerHTML=`
+    <div class="manage-header">
+      <div class="manage-title">袋型管理<span>共 ${bags.length} 種</span></div>
+      ${editingBag===null?`<button class="add-btn" onclick="startNew()">＋ 新增袋型</button>`:''}
+    </div>
+    ${editorHtml}
+    ${listHtml}
+    ${bags.length===0?`<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">尚無袋型，請新增</div></div>`:''}
+  `;
+}
+
+function renderEditor(){
+  const itemsHtml=fbItems.map((item,idx)=>{
+    const partsHtml=item.parts.map((p,pi)=>`
+      ${pi>0?`<span style="color:var(--muted);font-size:13px;padding:0 2px">+</span>`:''}
+      <select class="small-select" onchange="fbChgType(${item.id},${pi},this.value)">
+        <option value="var"${p.type==='var'?' selected':''}>變數</option>
+        <option value="num"${p.type==='num'?' selected':''}>數字</option>
+      </select>
+      ${p.type==='var'
+        ?`<select class="var-select" onchange="fbChgVal(${item.id},${pi},this.value)">${ALL_VARS.map(v=>`<option${v===p.val?' selected':''}>${v}</option>`).join('')}</select>`
+        :`<input type="number" class="small-num" value="${p.val}" placeholder="0" oninput="fbChgVal(${item.id},${pi},this.value)"/>`
+      }
+      ${item.parts.length>1?`<button class="rm-part-btn" onclick="fbRmPart(${item.id},${pi})">✕</button>`:''}
+    `).join('');
+    return`
+      <div class="formula-item">
+        <div class="formula-item-top">
+          ${idx>0?`<span style="color:var(--sub);font-size:14px;font-weight:700">+</span>`:''}
+          <span style="color:var(--sub);font-size:13px">係數</span>
+          <input type="number" class="coeff-input" value="${item.coeff}" oninput="fbChgCoeff(${item.id},this.value)"/>
+          <span style="color:var(--sub);font-size:13px">×（</span>
+        </div>
+        <div class="parts-row">${partsHtml}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="add-part-btn" onclick="fbAddPart(${item.id})">＋ 括號內加項</button>
+          ${fbItems.length>1?`<button class="rm-item-btn" onclick="fbRmItem(${item.id})">刪除此項</button>`:''}
+          <span style="color:var(--sub);font-size:13px">）</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const fields=fbFields();
+  const isNew=editingBag==='new';
+
+  return`
+    <div class="editor-card">
+      <div class="editor-title">${isNew?'＋ 新增袋型':`編輯：${editingBag.name}`}</div>
+
+      <div class="form-grid2">
+        <div>
+          <label class="form-label">袋子名稱</label>
+          <input class="form-input" id="ed-name" value="${isNew?'':editingBag.name}" placeholder="例：三面封"/>
+        </div>
+        <div>
+          <label class="form-label">製作方向</label>
+          <select class="form-select" id="ed-dir">
+            <option${!editingBag||editingBag.direction==='直式'?' selected':''}>直式</option>
+            <option${editingBag&&editingBag.direction==='橫式'?' selected':''}>橫式</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">實寬公式組合</label>
+        <div class="formula-builder">
+          <div class="formula-preview" id="fb-preview">預覽：${fbDisplay()}</div>
+          ${itemsHtml}
+          <button class="add-item-btn" onclick="fbAddItem()">＋ 新增括號項</button>
+          <div class="outer-row">
+            <span>最後加常數</span>
+            <input type="number" class="outer-num" value="${fbOuterConst}" placeholder="0" oninput="fbSetOC(this.value)"/>
+            <span style="color:var(--muted);font-size:12px">（不需要填 0）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <label class="form-label">節距設定</label>
+        <div class="settings-row">
+          <span style="color:var(--sub);font-size:13px">節距 =</span>
+          <select class="var-select" onchange="fbSetPV(this.value)">${ALL_VARS.map(v=>`<option${v===fbPitchVar?' selected':''}>${v}</option>`).join('')}</select>
+          <span style="color:var(--sub);font-size:13px">+</span>
+          <input type="number" class="small-num" style="width:70px" value="${fbPitchConst}" placeholder="0" oninput="fbSetPC(this.value)"/>
+          <span style="color:var(--muted);font-size:12px">（不需要填 0）</span>
+        </div>
+        <div class="settings-preview" id="pitch-prev">節距 = ${fbPitchLabel()}</div>
+      </div>
+
+      <div class="settings-section">
+        <label class="form-label">模寬基礎</label>
+        <div class="settings-row">
+          <select class="var-select" onchange="fbSetWV(this.value)">${ALL_VARS.map(v=>`<option${v===fbWidthVar?' selected':''}>${v}</option>`).join('')}</select>
+          <span style="color:var(--sub);font-size:13px">+</span>
+          <input type="number" class="small-num" style="width:70px" value="${fbWidthConst}" placeholder="0" oninput="fbSetWC(this.value)"/>
+          <span style="color:var(--muted);font-size:12px">（不需要填 0）</span>
+        </div>
+        <div class="settings-preview" id="width-prev">模寬 = ${fbWidthBase()}</div>
+      </div>
+
+      <div class="auto-fields">
+        <div class="auto-fields-title">✦ 自動偵測需輸入的欄位</div>
+        <div class="auto-fields-chips" id="auto-chips">${fields.map(f=>`<span class="auto-chip">${f}</span>`).join('')}</div>
+      </div>
+
+      <div class="editor-actions">
+        <button class="save-btn" onclick="doSave()">儲存袋型</button>
+        <button class="cancel-btn" onclick="cancelEdit()">取消</button>
+      </div>
+    </div>
+  `;
+}
+
+// ── Editor actions ────────────────────────────
+function startNew(){editingBag='new';fbItems=[fbNew()];fbOuterConst='';fbPitchVar='H1';fbPitchConst='';fbWidthVar='W1';fbWidthConst='';deleteConfirmId=null;renderManage();}
+function startEdit(id){editingBag=bags.find(b=>b.id===id);fbItems=[fbNew()];fbOuterConst='';fbPitchVar='H1';fbPitchConst='';fbWidthVar='W1';fbWidthConst='';deleteConfirmId=null;renderManage();}
+function cancelEdit(){editingBag=null;renderManage();}
+function doSave(){
+  const name=document.getElementById('ed-name')?.value?.trim();
+  const dir=document.getElementById('ed-dir')?.value;
+  if(!name){alert('請輸入袋子名稱');return;}
+  const nb={
+    id:editingBag==='new'?Date.now():editingBag.id,
+    name,direction:dir,
+    formulaDisplay:fbDisplay(),formulaFn:fbFn(),
+    pitchFn:fbPitchFn(),pitchLabel:fbPitchLabel(),
+    widthBase:fbWidthBase(),fields:fbFields(),
+  };
+  if(editingBag==='new') bags.push(nb);
+  else bags=bags.map(b=>b.id===nb.id?nb:b);
+  saveData();editingBag=null;renderManage();
+}
+function confirmDel(id){deleteConfirmId=id;renderManage();}
+function cancelDel(){deleteConfirmId=null;renderManage();}
+function doDelete(id){
+  bags=bags.filter(b=>b.id!==id);
+  if(selectedBagId===id) selectedBagId=bags[0]?.id||null;
+  deleteConfirmId=null;saveData();renderManage();
+}
+
+// ── Formula builder actions ───────────────────
+function fbAddItem(){fbItems.push(fbNew());renderManage();}
+function fbRmItem(id){fbItems=fbItems.filter(i=>i.id!==id);renderManage();}
+function fbChgCoeff(id,v){fbItems=fbItems.map(i=>i.id===id?{...i,coeff:v}:i);fbUpdatePreview();}
+function fbAddPart(id){fbItems=fbItems.map(i=>i.id===id?{...i,parts:[...i.parts,{type:'var',val:'W1'}]}:i);renderManage();}
+function fbRmPart(id,pi){fbItems=fbItems.map(i=>i.id===id?{...i,parts:i.parts.filter((_,x)=>x!==pi)}:i);renderManage();}
+function fbChgType(id,pi,v){fbItems=fbItems.map(i=>i.id===id?{...i,parts:i.parts.map((p,x)=>x===pi?{...p,type:v,val:v==='var'?'W1':'0'}:p)}:i);renderManage();}
+function fbChgVal(id,pi,v){fbItems=fbItems.map(i=>i.id===id?{...i,parts:i.parts.map((p,x)=>x===pi?{...p,val:v}:p)}:i);fbUpdatePreview();}
+function fbSetOC(v){fbOuterConst=v;fbUpdatePreview();}
+function fbSetPV(v){fbPitchVar=v;fbUpdatePreview();}
+function fbSetPC(v){fbPitchConst=v;fbUpdatePreview();}
+function fbSetWV(v){fbWidthVar=v;fbUpdatePreview();}
+function fbSetWC(v){fbWidthConst=v;fbUpdatePreview();}
+
+function fbUpdatePreview(){
+  const p=document.getElementById('fb-preview');
+  if(p) p.textContent=`預覽：${fbDisplay()}`;
+  const pp=document.getElementById('pitch-prev');
+  if(pp) pp.textContent=`節距 = ${fbPitchLabel()}`;
+  const wp=document.getElementById('width-prev');
+  if(wp) wp.textContent=`模寬 = ${fbWidthBase()}`;
+  const ac=document.getElementById('auto-chips');
+  if(ac) ac.innerHTML=fbFields().map(f=>`<span class="auto-chip">${f}</span>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  SERVICE WORKER
+// ══════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+loadData();
+renderCalc();
+</script>
+</body>
+</html>
