@@ -214,6 +214,7 @@ function computeAll(bag,inputs){
 function getRec(res){const v840=res.filter(r=>r.versionLength===840);return v840.length?v840[v840.length-1].n:res[res.length-1].n;}
 function getCats(){return[...new Set(bags.map(b=>b.category))];}
 function getByCat(cat){return bags.filter(b=>b.category===cat);}
+function sortFields(fields){return[...fields].sort((a,b)=>{const ia=ALL_VARS.indexOf(a),ib=ALL_VARS.indexOf(b);return(ia===-1?999:ia)-(ib===-1?999:ib);});}
 
 // FB helpers
 function fbNew(){return{id:Date.now()+Math.random(),coeff:'2',parts:[{type:'var',val:'W1'}],addConst:''};}
@@ -246,7 +247,7 @@ function fbFn(){
 function fbPF(){const c=parseFloat(fbPitchConst)||0;return c?`({${fbPitchVar}})=>${fbPitchVar}+${c}`:`({${fbPitchVar}})=>${fbPitchVar}`;}
 function fbPL(){const c=parseFloat(fbPitchConst)||0;return c?`${fbPitchVar}+${c}`:fbPitchVar;}
 function fbWB(){const c=parseFloat(fbWidthConst)||0;return c?`${fbWidthVar}+${c}`:fbWidthVar;}
-function fbF(){const s=new Set();fbItems.forEach(i=>i.parts.forEach(p=>{if(p.type==='var')s.add(p.val);}));s.add(fbPitchVar);return[...s];}
+function fbF(){const s=new Set();fbItems.forEach(i=>i.parts.forEach(p=>{if(p.type==='var')s.add(p.val);}));s.add(fbPitchVar);return sortFields([...s]);}
 
 function switchTab(t){
   currentTab=t;
@@ -267,7 +268,7 @@ function renderCalc(){
   let metaHtml='';
   if(bag)metaHtml=`<div class="meta-tags"><span class="meta-tag green">${bag.category} — ${bag.name}</span><span class="meta-tag gray">模寬：${bag.widthBase}</span><span class="meta-tag gray">節距：${bag.pitchLabel}</span></div>`;
   let fieldsHtml='';
-  if(bag)fieldsHtml=bag.fields.map(f=>`<div class="field-wrap"><label>${f} <span style="color:var(--muted);font-weight:400">(mm)</span></label><input type="number" inputmode="decimal" value="${calcInputs[f]??''}" placeholder="0" oninput="setInput('${f}',this.value)"/></div>`).join('');
+  if(bag)fieldsHtml=sortFields(bag.fields).map(f=>`<div class="field-wrap"><label>${f} <span style="color:var(--muted);font-weight:400">(mm)</span></label><input type="number" inputmode="decimal" value="${calcInputs[f]??''}" placeholder="0" oninput="setInput('${f}',this.value)"/></div>`).join('');
   let resultsHtml='';
   if(calcResults&&calcResults.length){
     const rec=getRec(calcResults);
@@ -369,7 +370,7 @@ function renderManage(){
             <div class="bag-item-tags">
               <span class="meta-tag gray" style="font-size:11px">模寬：${b.widthBase}</span>
               <span class="meta-tag gray" style="font-size:11px">節距：${b.pitchLabel}</span>
-              ${b.fields.map(f=>`<span class="meta-tag gray" style="font-size:11px">${f}</span>`).join('')}
+              ${sortFields(b.fields).map(f=>`<span class="meta-tag gray" style="font-size:11px">${f}</span>`).join('')}
             </div>
             <div class="bag-item-formula">實寬：${b.formulaDisplay}</div>
           </div>
