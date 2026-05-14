@@ -67,17 +67,14 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .result-card{border-radius:var(--radius);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);position:relative;border:2px solid var(--border);background:var(--card)}
 .result-card.recommended{background:var(--accent-light);border-color:var(--accent)}
 .rec-badge{position:absolute;top:-12px;left:18px;background:var(--accent);color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px}
-.n-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.n-label{color:var(--sub);font-size:14px}
-.n-badge{background:var(--tag);color:var(--accent-text);font-size:18px;font-weight:900;padding:4px 18px;border-radius:8px}
 .metrics-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
 .metric{border:1px solid var(--border);border-radius:12px;padding:12px 4px;text-align:center}
 .result-card.recommended .metric{background:#fff}
 .result-card:not(.recommended) .metric{background:var(--bg)}
-.metric-label{color:var(--muted);font-size:10px;font-weight:700;margin-bottom:5px;letter-spacing:.3px}
-.metric-val{font-size:22px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.metric-label{color:var(--muted);font-size:12px;font-weight:700;margin-bottom:5px;letter-spacing:.3px}
+.metric-val{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
 .result-card.recommended .metric-val{color:var(--accent-text)}
-.metric-unit{color:var(--muted);font-size:10px;margin-top:2px}
+.metric-unit{color:var(--muted);font-size:11px;margin-top:3px}
 .toggle-btn{background:transparent;border:1px solid var(--border);color:var(--sub);font-size:13px;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;display:flex;align-items:center;gap:5px}
 .detail-box{margin-top:12px;background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid var(--border)}
 .detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);gap:10px}
@@ -184,6 +181,8 @@ const DEFAULT_BAGS=[
   {id:11,category:"立式袋",name:"橫式+造型",formulaDisplay:"[2×(H1+5)+2×(H2)] × n + 30",formulaFn:"({H1,H2,n})=>(2*(H1+5)+2*H2)*n+30",pitchFn:"({W1})=>W1+5",pitchLabel:"W1+5",widthBase:"H1+5",fields:["H1","H2","W1"]},
   {id:12,category:"立式袋",name:"由任+造型",formulaDisplay:"[2×(H1+5)+2×(H2)] × n + 30",formulaFn:"({H1,H2,n})=>(2*(H1+5)+2*H2)*n+30",pitchFn:"({W1})=>W1+5",pitchLabel:"W1+5",widthBase:"H1+5",fields:["H1","H2","W1"]},
   {id:13,category:"立式袋",name:"由任",formulaDisplay:"[2×(H1)+2×(H2)] × n + 30",formulaFn:"({H1,H2,n})=>(2*H1+2*H2)*n+30",pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","H2","W1"]},
+  {id:14,category:"自動紙",name:"直式",formulaDisplay:"W1 × n + 10",formulaFn:"({W1,n})=>W1*n+10",pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1"]},
+  {id:15,category:"自動紙",name:"橫式",formulaDisplay:"H1 × n + 10",formulaFn:"({H1,n})=>H1*n+10",pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","W1"]},
 ];
 
 let bags=[],currentTab='calc',selectedCategory=null,selectedBagId=null;
@@ -191,8 +190,8 @@ let calcInputs={},calcResults=null,calcError='';
 let editingBag=null,deleteConfirmId=null;
 let fbItems=[],fbOuterConst='',fbPitchVar='H1',fbPitchConst='',fbWidthVar='W1',fbWidthConst='',fbCategory='',fbBagName='';
 
-function loadData(){try{const s=localStorage.getItem('packBags_v5');bags=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_BAGS));}catch{bags=JSON.parse(JSON.stringify(DEFAULT_BAGS));}}
-function saveData(){try{localStorage.setItem('packBags_v5',JSON.stringify(bags));}catch{}}
+function loadData(){try{const s=localStorage.getItem('packBags_v6');bags=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_BAGS));}catch{bags=JSON.parse(JSON.stringify(DEFAULT_BAGS));}}
+function saveData(){try{localStorage.setItem('packBags_v6',JSON.stringify(bags));}catch{}}
 
 function evalFn(fn,args){try{return new Function('a',`return (${fn})(a);`)(args);}catch{return null;}}
 function getPM(pitch){for(let m=1;m<=200;m++){const v=pitch*m;if(v%10===0&&v>=430)return{m,vw:v};}return null;}
@@ -313,21 +312,19 @@ function renderRC(r,bag,isRec){
   const did=`d${r.n}`;
   return`<div class="result-card${isRec?' recommended':''}">
     ${isRec?'<div class="rec-badge">✦ 建議選用</div>':''}
-    <div class="n-row"><span class="n-label">寬向模數</span><span class="n-badge">× ${r.n}</span></div>
     <div class="metrics-grid">
       <div class="metric"><div class="metric-label">實寬</div><div class="metric-val">${r.realWidth}</div><div class="metric-unit">mm</div></div>
-      <div class="metric"><div class="metric-label">版週</div><div class="metric-val">${r.versWeek}</div><div class="metric-unit">mm</div></div>
-      <div class="metric"><div class="metric-label">軋版模數</div><div class="metric-val">${r.plateModulus}</div></div>
       <div class="metric"><div class="metric-label">版長</div><div class="metric-val">${r.versionLength}</div><div class="metric-unit">mm</div></div>
+      <div class="metric"><div class="metric-label">版週</div><div class="metric-val">${r.versWeek}</div><div class="metric-unit">mm</div></div>
+      <div class="metric"><div class="metric-label">模寬</div><div class="metric-val">${r.modWidth}</div><div class="metric-unit">mm</div></div>
+      <div class="metric"><div class="metric-label">節距</div><div class="metric-val">${r.pitch}</div><div class="metric-unit">mm</div></div>
+      <div class="metric"><div class="metric-label">寬向模數</div><div class="metric-val">${r.n}</div></div>
+      <div class="metric"><div class="metric-label">節距向模數</div><div class="metric-val">${r.pitchModulus}</div></div>
+      <div class="metric"><div class="metric-label">軋版模數</div><div class="metric-val">${r.plateModulus}</div></div>
     </div>
     <button class="toggle-btn" onclick="toggleD('${did}',this)"><span>▼</span> 查看計算式</button>
     <div id="${did}" class="detail-box" style="display:none">
       <div class="detail-row"><span class="detail-key">實寬公式</span><span class="detail-val">${bag.formulaDisplay}</span></div>
-      <div class="detail-row"><span class="detail-key">模寬</span><span class="detail-val">${r.modWidth} mm</span></div>
-      <div class="detail-row"><span class="detail-key">節距</span><span class="detail-val">${r.pitch} mm（${bag.pitchLabel}）</span></div>
-      <div class="detail-row"><span class="detail-key">節距向模數</span><span class="detail-val">${r.pitchModulus}</span></div>
-      <div class="detail-row"><span class="detail-key">版週計算式</span><span class="detail-val">${r.pitch} × ${r.pitchModulus} = ${r.versWeek}</span></div>
-      <div class="detail-row"><span class="detail-key">軋版模數計算式</span><span class="detail-val">${r.n} × ${r.pitchModulus} = ${r.plateModulus}</span></div>
       <div class="detail-row"><span class="detail-key">版長判斷</span><span class="detail-val">${r.realWidth}+100=${r.realWidth+100} → 取 ${r.versionLength}</span></div>
     </div>
   </div>`;
