@@ -71,7 +71,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .metric{border:1px solid var(--border);border-radius:12px;padding:12px 4px;text-align:center}
 .result-card.recommended .metric{background:#fff}
 .result-card:not(.recommended) .metric{background:var(--bg)}
-.metric-label{color:var(--muted);font-size:12px;font-weight:700;margin-bottom:5px;letter-spacing:.3px}
+.metric-label{color:#444;font-size:15px;font-weight:700;margin-bottom:5px;letter-spacing:.3px}
 .metric-val{font-size:26px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
 .result-card.recommended .metric-val{color:var(--accent-text)}
 .metric-unit{color:var(--muted);font-size:11px;margin-top:3px}
@@ -141,6 +141,15 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .empty-state{text-align:center;padding:70px 20px;color:var(--muted)}
 .empty-icon{font-size:52px;margin-bottom:14px}
 .empty-text{font-size:16px;font-weight:600}
+
+/* Preview */
+.preview-card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:16px;box-shadow:var(--shadow);border:1px dashed var(--accent)}
+.preview-title{font-size:13px;font-weight:800;color:var(--accent-text);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.preview-body{background:var(--accent-light);border-radius:10px;padding:12px;margin-top:10px}
+.preview-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(45,106,79,.12);gap:10px;align-items:baseline}
+.preview-row:last-child{border-bottom:none}
+.preview-key{color:var(--accent-text);font-size:13px;font-weight:700;white-space:nowrap}
+.preview-val{color:var(--accent-text);font-size:14px;font-weight:900;text-align:right;font-family:monospace}
 button:active{opacity:.75;transform:scale(.97)}
 </style>
 </head>
@@ -181,17 +190,38 @@ const DEFAULT_BAGS=[
   {id:11,category:"立式袋",name:"橫式+造型",formulaDisplay:"[2×(H1+5)+2×(H2)] × n + 30",formulaFn:"({H1,H2,n})=>(2*(H1+5)+2*H2)*n+30",pitchFn:"({W1})=>W1+5",pitchLabel:"W1+5",widthBase:"H1+5",fields:["H1","H2","W1"]},
   {id:12,category:"立式袋",name:"由任+造型",formulaDisplay:"[2×(H1+5)+2×(H2)] × n + 30",formulaFn:"({H1,H2,n})=>(2*(H1+5)+2*H2)*n+30",pitchFn:"({W1})=>W1+5",pitchLabel:"W1+5",widthBase:"H1+5",fields:["H1","H2","W1"]},
   {id:13,category:"立式袋",name:"由任",formulaDisplay:"[2×(H1)+2×(H2)] × n + 30",formulaFn:"({H1,H2,n})=>(2*H1+2*H2)*n+30",pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","H2","W1"]},
-  {id:14,category:"自動紙",name:"直式",formulaDisplay:"W1 × n + 10",formulaFn:"({W1,n})=>W1*n+10",pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1"]},
-  {id:15,category:"自動紙",name:"橫式",formulaDisplay:"H1 × n + 10",formulaFn:"({H1,n})=>H1*n+10",pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","W1"]},
+  {id:14,category:"自動紙",name:"直式",formulaDisplay:"W1 × n",formulaFn:"({W1,n})=>W1*n",pitchFn:"({H1})=>H1",pitchLabel:"H1",widthBase:"W1",fields:["W1","H1"]},
+  {id:15,category:"自動紙",name:"橫式",formulaDisplay:"H1 × n",formulaFn:"({H1,n})=>H1*n",pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","W1"]},
 ];
 
-let bags=[],currentTab='calc',selectedCategory=null,selectedBagId=null;
+let bags=[],currentTab='calc',selectedCategory=null,selectedBagId=null,previewBagId=null;
 let calcInputs={},calcResults=null,calcError='';
 let editingBag=null,deleteConfirmId=null;
 let fbItems=[],fbOuterConst='',fbPitchVar='H1',fbPitchConst='',fbWidthVar='W1',fbWidthConst='',fbCategory='',fbBagName='';
 
-function loadData(){try{const s=localStorage.getItem('packBags_v6');bags=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_BAGS));}catch{bags=JSON.parse(JSON.stringify(DEFAULT_BAGS));}}
-function saveData(){try{localStorage.setItem('packBags_v6',JSON.stringify(bags));}catch{}}
+function loadData(){
+  try{
+    const s7=localStorage.getItem('packBags_v7');
+    if(s7){bags=JSON.parse(s7);return;}
+    const s6=localStorage.getItem('packBags_v6');
+    if(s6){
+      bags=JSON.parse(s6);
+      // 自動紙公式遷移
+      bags=bags.map(b=>{
+        if(b.category==='自動紙'&&b.name==='直式')return{...b,formulaDisplay:'W1 × n',formulaFn:'({W1,n})=>W1*n'};
+        if(b.category==='自動紙'&&b.name==='橫式')return{...b,formulaDisplay:'H1 × n',formulaFn:'({H1,n})=>H1*n'};
+        return b;
+      });
+      if(!bags.some(b=>b.category==='自動紙'&&b.name==='橫式')){
+        bags.push({id:15,category:"自動紙",name:"橫式",formulaDisplay:"H1 × n",formulaFn:"({H1,n})=>H1*n",pitchFn:"({W1})=>W1",pitchLabel:"W1",widthBase:"H1",fields:["H1","W1"]});
+      }
+      localStorage.setItem('packBags_v7',JSON.stringify(bags));
+      return;
+    }
+    bags=JSON.parse(JSON.stringify(DEFAULT_BAGS));
+  }catch{bags=JSON.parse(JSON.stringify(DEFAULT_BAGS));}
+}
+function saveData(){try{localStorage.setItem('packBags_v7',JSON.stringify(bags));}catch{}}
 
 function evalFn(fn,args){try{return new Function('a',`return (${fn})(a);`)(args);}catch{return null;}}
 function getPM(pitch){for(let m=1;m<=200;m++){const v=pitch*m;if(v%10===0&&v>=430)return{m,vw:v};}return null;}
@@ -248,6 +278,43 @@ function fbPL(){const c=parseFloat(fbPitchConst)||0;return c?`${fbPitchVar}+${c}
 function fbWB(){const c=parseFloat(fbWidthConst)||0;return c?`${fbWidthVar}+${c}`:fbWidthVar;}
 function fbF(){const s=new Set();fbItems.forEach(i=>i.parts.forEach(p=>{if(p.type==='var')s.add(p.val);}));s.add(fbPitchVar);return sortFields([...s]);}
 
+
+function onPreviewBagChg(id){previewBagId=id?parseInt(id):null;renderCalc();}
+
+function renderPreview(currentBag){
+  const allBags=bags;
+  const opts=getCats().map(cat=>{
+    const items=getByCat(cat).map(b=>`<option value="${b.id}"${b.id===previewBagId?' selected':''}>${b.category} — ${b.name}</option>`).join('');
+    return`<optgroup label="${cat}">${items}</optgroup>`;
+  }).join('');
+  const pb=previewBagId?bags.find(b=>b.id===previewBagId):null;
+  let bodyHtml='';
+  if(pb){
+    const inputs={};
+    pb.fields.forEach(f=>{const v=parseFloat(calcInputs[f]);if(!isNaN(v))inputs[f]=v;});
+    const rw1=evalFn(pb.formulaFn,{...inputs,n:1});
+    const pitch=evalFn(pb.pitchFn,inputs);
+    const pm=pitch?getPM(pitch):null;
+    bodyHtml=`<div class="preview-body">
+      <div class="preview-row"><span class="preview-key">實寬公式</span><span class="preview-val">${pb.formulaDisplay}</span></div>
+      <div class="preview-row"><span class="preview-key">實寬 (n=1)</span><span class="preview-val">${rw1!==null&&!isNaN(rw1)?rw1+' mm':'需輸入數值'}</span></div>
+      <div class="preview-row"><span class="preview-key">節距公式</span><span class="preview-val">${pb.pitchLabel}</span></div>
+      <div class="preview-row"><span class="preview-key">節距值</span><span class="preview-val">${pitch!==null&&!isNaN(pitch)?pitch+' mm':'需輸入數值'}</span></div>
+      <div class="preview-row"><span class="preview-key">最小版週</span><span class="preview-val">${pm?pm.vw+' mm（×'+pm.m+'）':'需輸入數值'}</span></div>
+    </div>`;
+  }
+  return`<div class="preview-card">
+    <div class="preview-title">🔍 規格預覽</div>
+    <div class="select-wrap">
+      <select class="styled-select" onchange="onPreviewBagChg(this.value)" style="font-size:14px;padding:9px 36px 9px 12px">
+        <option value="">— 選擇包材類型預覽 —</option>${opts}
+      </select>
+      <span class="select-arrow">▼</span>
+    </div>
+    ${bodyHtml}
+  </div>`;
+}
+
 function switchTab(t){
   currentTab=t;
   document.getElementById('tab-calc').style.display=t==='calc'?'':'none';
@@ -265,7 +332,7 @@ function renderCalc(){
   const catOpts=cats.map(c=>`<option value="${c}"${c===selectedCategory?' selected':''}>${c}</option>`).join('');
   const bagOpts=bagsInCat.map(b=>`<option value="${b.id}"${b.id===selectedBagId?' selected':''}>${b.name}</option>`).join('');
   let metaHtml='';
-  if(bag)metaHtml=`<div class="meta-tags"><span class="meta-tag green">${bag.category} — ${bag.name}</span><span class="meta-tag gray">模寬：${bag.widthBase}</span><span class="meta-tag gray">節距：${bag.pitchLabel}</span></div>`;
+  if(bag)metaHtml=`<div class="meta-tags"><span class="meta-tag green">${bag.category} — ${bag.name}</span><span class="meta-tag gray">模寬：${bag.widthBase}</spam><span class="meta-tag gray">節距：${bag.pitchLabel}</span></div>`;
   let fieldsHtml='';
   if(bag)fieldsHtml=sortFields(bag.fields).map(f=>`<div class="field-wrap"><label>${f} <span style="color:var(--muted);font-weight:400">(mm)</span></label><input type="number" inputmode="decimal" value="${calcInputs[f]??''}" placeholder="0" oninput="setInput('${f}',this.value)"/></div>`).join('');
   let resultsHtml='';
@@ -300,6 +367,7 @@ function renderCalc(){
         ${calcError?`<div class="error-msg">⚠ ${calcError}</div>`:''}
         <button class="calc-btn" onclick="doCalc()">計　　算</button>
       </div>
+      ${renderPreview(bag)}
       ${resultsHtml}
     `:selectedCategory?
       `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">請選擇規格</div></div>`:
@@ -325,6 +393,7 @@ function renderRC(r,bag,isRec){
     <button class="toggle-btn" onclick="toggleD('${did}',this)"><span>▼</span> 查看計算式</button>
     <div id="${did}" class="detail-box" style="display:none">
       <div class="detail-row"><span class="detail-key">實寬公式</span><span class="detail-val">${bag.formulaDisplay}</span></div>
+      <div class="detail-row"><span class="detail-key">版週公式</span><span class="detail-val">節距 × 節距向模數 = ${r.pitch} × ${r.pitchModulus} = ${r.versWeek} mm</span></div>
       <div class="detail-row"><span class="detail-key">版長判斷</span><span class="detail-val">${r.realWidth}+100=${r.realWidth+100} → 取 ${r.versionLength}</span></div>
     </div>
   </div>`;
@@ -487,14 +556,33 @@ function renderEditor(){
 }
 
 function startNew(){editingBag='new';fbItems=[fbNew()];fbOuterConst='';fbPitchVar='H1';fbPitchConst='';fbWidthVar='W1';fbWidthConst='';fbCategory='';fbBagName='';deleteConfirmId=null;renderManage();}
-function startEdit(id){const b=bags.find(x=>x.id===id);editingBag=b;fbItems=[fbNew()];fbOuterConst='';fbPitchVar='H1';fbPitchConst='';fbWidthVar='W1';fbWidthConst='';fbCategory=b.category;fbBagName=b.name;deleteConfirmId=null;renderManage();}
+function startEdit(id){
+  const b=bags.find(x=>x.id===id);
+  editingBag=b;
+  if(b.fbState){
+    fbItems=JSON.parse(JSON.stringify(b.fbState.fbItems));
+    fbOuterConst=b.fbState.fbOuterConst||'';
+    fbPitchVar=b.fbState.fbPitchVar||'H1';
+    fbPitchConst=b.fbState.fbPitchConst||'';
+    fbWidthVar=b.fbState.fbWidthVar||'W1';
+    fbWidthConst=b.fbState.fbWidthConst||'';
+  }else{
+    fbItems=[fbNew()];
+    fbOuterConst='';
+    fbPitchVar=(b.pitchLabel||'H1').split('+')[0];
+    fbPitchConst='';
+    fbWidthVar=(b.widthBase||'W1').split('+')[0];
+    fbWidthConst='';
+  }
+  fbCategory=b.category;fbBagName=b.name;deleteConfirmId=null;renderManage();
+}
 function cancelEdit(){editingBag=null;renderManage();}
 function doSave(){
   const cat=document.getElementById('ed-cat')?.value?.trim();
   const name=document.getElementById('ed-name')?.value?.trim();
   if(!cat){alert('請輸入包材名稱（類別）');return;}
   if(!name){alert('請輸入規格名稱');return;}
-  const nb={id:editingBag==='new'?Date.now():editingBag.id,category:cat,name,formulaDisplay:fbDisp(),formulaFn:fbFn(),pitchFn:fbPF(),pitchLabel:fbPL(),widthBase:fbWB(),fields:fbF()};
+  const nb={id:editingBag==='new'?Date.now():editingBag.id,category:cat,name,formulaDisplay:fbDisp(),formulaFn:fbFn(),pitchFn:fbPF(),pitchLabel:fbPL(),widthBase:fbWB(),fields:fbF(),fbState:{fbItems:JSON.parse(JSON.stringify(fbItems)),fbOuterConst,fbPitchVar,fbPitchConst,fbWidthVar,fbWidthConst}};
   if(editingBag==='new')bags.push(nb);else bags=bags.map(b=>b.id===nb.id?nb:b);
   saveData();editingBag=null;renderManage();
 }
