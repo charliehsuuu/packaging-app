@@ -364,6 +364,7 @@ function renderCalc(){
     ${bag?`
       <div class="input-card">
         <div class="fields-grid">${fieldsHtml}</div>
+${bag&&bag.category.includes(`自動紙`)?`<div class="field-wrap" style="margin-top:8px"><label style="color:var(--sub);font-size:13px;font-weight:600;display:block;margin-bottom:5px">每卷長度 <span style="font-weight:400;font-size:11px">(公尺，選填)</span></label><input id="rollLen" type="number" min="0" placeholder="" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:16px;background:var(--bg);color:var(--text)"></div>`:''}
         ${calcError?`<div class="error-msg">⚠ ${calcError}</div>`:''}
         <button class="calc-btn" onclick="doCalc()">計　　算</button>
       </div>
@@ -395,6 +396,7 @@ function renderRC(r,bag,isRec){
       <div class="detail-row"><span class="detail-key">實寬公式</span><span class="detail-val">${bag.formulaDisplay}</span></div>
       <div class="detail-row"><span class="detail-key">版週公式</span><span class="detail-val">節距 × 節距向模數 = ${r.pitch} × ${r.pitchModulus} = ${r.versWeek} mm</span></div>
       <div class="detail-row"><span class="detail-key">版長判斷</span><span class="detail-val">${r.realWidth}+100=${r.realWidth+100} → 取 ${r.versionLength}</span></div>
+${bag.category.includes(`自動紙`)?(()=>{const rl=parseFloat(document.getElementById(`rollLen`)?.value||0);return rl>0?`<div class="detail-row"><span class="detail-key">最低訂購量</span><span class="detail-val">${Math.ceil((4000/rl)*r.n)} 卷</span></div>`:''})():`<div class="detail-row"><span class="detail-key">最低訂購量</span><span class="detail-val">${Math.ceil(4000/(r.pitch/1000)*r.n)} 片</span></div>`}
     </div>
   </div>`;
 }
